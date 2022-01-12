@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+    <link href="index.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+    <title>The Drugs</title>
+</head>
+
+<body>
+    <body style="background-color: gold"></body>
+    <div>
+        <nav class="navbar navbar-dark bg-dark">
+            <a class="navbar-brand" href="#"> The Drugs </a>
+            <button type="button" class="btn btn-primary" onclick="showUserCreateBox()">Add Product</button>
+
+        </nav>
+
+    </div>
+
+    <div class="container">
+        <input style="width: 30%; margin: auto;"  class="form-control" id="myInput" type="text" placeholder="Search">
+        <div class="p-2 bd-highlight">
+        </div>
+    </div>
+    <div class="table-dark">
+        <table class="table table-ligth">
+            <thead class="table-dark">
+                <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Nama Product</th>
+                        <th scope="col">Deskripsi Product</th>
+                        <th scope="col">Harga</th>
+                        <th scope="col"></th>
+                        <th scope="col"></th>
+                        
+                </tr>
+            </thead>
+            <tbody id="mytable">
+                <tr>
+                    <th scope="row" colspan="5">Loading</th>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    </div>
+
+
+    <script>
+        $(document).ready(function() {
+            $("#myInput").on("keyup", function() {
+                var value = $(this).val().toLowerCase();
+                $("#mytable tr").filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+        });
+
+        function loadTable() {
+            const xhttp = new XMLHttpRequest();
+            xhttp.open("GET", "http://localhost:8080/api/product");
+            xhttp.send();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    console.log(this.responseText);
+                    var trHtml = '';
+                    const objects = JSON.parse(this.responseText);
+                    for (let object of objects) {
+                        trHtml += '<tr>';
+                        trHtml += '<td>' + object['id'] + '</td>';
+                        trHtml += '<td>' + object['name'] + '</td>';
+                        trHtml += '<td>' + object['description'] + '</td>';
+                        trHtml += '<td>' + object['price'] + '</td>';
+                        trHtml += '<td><button type="button" class="btn btn-secondary" onclick = "showUserEditBox(' + object['id'] + ')">Edit</button></td>';
+                        trHtml += '<td><button type="button" class="btn btn-danger" onclick="userDelete(' + object['id'] + ')"> Hapus</button></td>';
+                        trHtml += '</tr>';
+                    }
+                    document.getElementById("mytable").innerHTML = trHtml;
+                }
+            };
+        }
+        loadTable();
+
+        function showUserCreateBox() {
+            Swal.fire({
+                title: 'Tambah Product',
+                html: '<input id="id" type="hidden">' +
+                    '<input id="name" class="swal2-input" placeholder="Nama Product">' +
+                    '<input id="description" class="swal2-input" placeholder="Deskripsi Product">' +
+                    '<input id="price" class="swal2-input" placeholder="Harga">',
+                focusConfirm: false,
+                preConfirm: () => {
+                    userCreate();
+                }
+            })
+        }
+
+        function userCreate() {
+       
+            const name = document.getElementById("name").value;
+            const description = document.getElementById("description").value;
+            const price = document.getElementById("price").value;
+
+            const xhttp = new XMLHttpRequest();
+            xhttp.open("POST", "http://localhost:8080/api/product");
+            xhttp.setRequestHeader("Content-Type", "application/json;");
+            xhttp.send(JSON.stringify({
+                "name": name,
+                "description": description,
+                "price": price
+            }));
+            xhttp.onreadystatechange = function() {
+                if (this.status == 200) {
+                    const objects = JSON.parse(this.responseText);
+                    Swal.fire(objects['kata-kata']);
+                    loadTable();
+                }
+            }
+        }
+
+        function showUserEditBox(id) {
+            console.log(id);
+            const xhttp = new XMLHttpRequest();
+            xhttp.open("GET", "http://localhost:8080/api/product/" + id);
+            xhttp.send();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    const objects = JSON.parse(this.responseText);
+                    const name = objects["name"];
+                    console.log(name);
+                    Swal.fire({
+                        title: 'Edit Product',
+                        html: '<input id="id" class="swal2-input" placeholder="id" value="' + objects['id'] + '">' +
+                            '<input id="name" class="swal2-input" placeholder="Nama Product" value="' + objects['name'] + '">' +
+                            '<input id="description" class="swal2-input" placeholder="Deskripsi Product" value="' + objects['description'] + '">' +
+                            '<input id="price" class="swal2-input" placeholder="Harga" value="' + objects['price'] + '">',
+                        focusConfirm: false,
+                        preConfirm: () => {
+                            userEdit();
+                        }
+                    })
+                }
+            };
+        }
+
+        function userEdit() {
+            const id = document.getElementById("id").value;
+            const name = document.getElementById("name").value;
+            const description = document.getElementById("description").value;
+            const price = document.getElementById("price").value;
+
+            const xhttp = new XMLHttpRequest();
+            xhttp.open("PUT", "http://localhost:8080/api/product/");
+            xhttp.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+            xhttp.send(JSON.stringify({
+                "id": id,
+                "name": name,
+                "description": description,
+                "price": price
+            }));
+            xhttp.onreadystatechange = function() {
+                if (this.status == 200) {
+                    const objects = JSON.parse(this.responseText);
+                    Swal.fire(objects['name']);
+                    loadTable();
+                }
+            }
+        }
+
+
+        function userDelete(id) {
+
+            const xhttp = new XMLHttpRequest();
+            xhttp.open("DELETE", "http://localhost:8080/api/product/" + id);
+            xhttp.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+            xhttp.send(JSON.stringify({
+                "id": id
+            }));
+            xhttp.onreadystatechange = function() {
+                var del = confirm("Beneran Mau di Hapus? Yakin ??");
+                if (del == true, this.status == 200) {
+
+                    const objects = JSON.parse(this.responseText);
+                    Swal.fire(objects["kata-kata"]);
+                    loadTable();
+
+                } else {
+                    return false;
+
+                }
+
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.16/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
+</body>
+
+</html>
